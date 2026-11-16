@@ -1,0 +1,560 @@
+// Généré par scripts/generate.py depuis la référence de l'API. Ne pas modifier à la main.
+
+export interface NextAction {
+  /** `card_payment` (confirmer une carte depuis votre formulaire) ou `redirect` (envoyer le client sur `redirect_url`). */
+  type: "card_payment" | "redirect";
+  /** `card_payment` : secret qui confirme le paiement depuis votre formulaire. */
+  client_secret: string;
+  /** `redirect` : page hébergée où le client termine. */
+  redirect_url: string;
+  [field: string]: unknown;
+}
+
+export interface Payment {
+  /** Identifiant du paiement (`pay_…`) */
+  id: string;
+  object: "payment";
+  /** `true` pour de l'argent réel (clé live), `false` en sandbox */
+  livemode: boolean;
+  /** Date de création, ISO 8601 */
+  created: string | null;
+  /** Session de checkout d'origine (`cs_…`), `null` pour un paiement direct. Avec `expand[]=checkout_session`, la session complète */
+  checkout_session: string | null;
+  /** Montant payé par le payeur, en unités mineures */
+  amount: number;
+  /** Frais retenus */
+  fee_amount: number;
+  /** Montant versé sur votre solde */
+  net_amount: number;
+  /** Qui a payé les frais. `merchant` : ils sont déduits de `net_amount`. `customer` : ils sont ajoutés à `amount`, et `net_amount` est le prix demandé. */
+  fee_paid_by: "merchant" | "customer";
+  /** Ce qui a déjà été rendu au client par des remboursements, en unités mineures. Le paiement passe à `refunded` quand il atteint `amount`. */
+  amount_refunded: number;
+  /** La contestation du paiement par le titulaire de la carte auprès de sa banque, `null` s'il n'y en a pas. Voir [Contestations](/payments/disputes). */
+  dispute: { status: "open" | "won" | "lost"; reason: string | null; amount: number; currency: string; evidence_due_by: string | null; created: string | null; closed: string | null } | null;
+  /** Devise réellement encaissée. En mobile money, celle de l'opérateur, après conversion si besoin. */
+  currency: string;
+  /** Canal de paiement */
+  payment_method: "mobile_money" | "card";
+  /** Pays de l'opérateur, `null` pour une carte. */
+  mobile_money_country: string | null;
+  /** Opérateur, `null` pour une carte. */
+  mobile_money_provider: string | null;
+  /** Le payeur, tel que saisi sur la page de paiement ou transmis à la création. Pour le mobile money, `phone` est le numéro réellement débité. */
+  payer: { name: string | null; email: string | null; phone: string | null };
+  /** Voir [Paiements](/payments/payment-object#statuts). */
+  status: "pending" | "processing" | "succeeded" | "failed" | "canceled" | "expired" | "refunded" | "disputed";
+  /** Code stable de l'échec quand `status` vaut `failed`, sinon `null`. Voir [la liste](/api/payments/create#failure_code). */
+  failure_code: string | null;
+  /** Raison de l'échec en français, à afficher telle quelle. */
+  failure_reason: string | null;
+  /** Vos données libres. Voir [Metadata](/developers/metadata). */
+  metadata: Record<string, unknown> | null;
+  next_action: NextAction;
+  [field: string]: unknown;
+}
+
+export interface CheckoutSession {
+  /** Identifiant de la session (`cs_…`) */
+  id: string;
+  object: "checkout_session";
+  /** `true` pour de l'argent réel (clé live), `false` en sandbox */
+  livemode: boolean;
+  /** Date de création, ISO 8601 */
+  created: string | null;
+  /** Montant demandé, en unités mineures. */
+  amount: number;
+  /** Devise du montant */
+  currency: string;
+  /** Affichée au client */
+  description: string | null;
+  /** Nom du payeur */
+  payer_name: string | null;
+  /** E-mail du payeur */
+  payer_email: string | null;
+  /** Téléphone du payeur */
+  payer_phone: string | null;
+  /** Adresse saisie, si un lien de paiement la demande : `line1`, `city`, `country`. */
+  payer_address: Record<string, unknown> | null;
+  /** Lien de paiement d'origine (`plink_…`), `null` sinon */
+  payment_link: string | null;
+  /** Réponses aux champs personnalisés d'un lien de paiement, par `id` de champ. Pour un fichier, son nom. */
+  custom_fields: Record<string, unknown>;
+  /** Retour après paiement réussi */
+  success_url: string | null;
+  /** Retour si le client abandonne */
+  cancel_url: string | null;
+  /** Moyens proposés sur la page de paiement. `null` : tous les moyens ouverts. */
+  payment_method_types: Array<"mobile_money" | "card"> | null;
+  /** Pays mobile money proposés. `null` : tous les pays ouverts. */
+  allowed_countries: string[] | null;
+  /** Voir [Sessions de paiement](/payments/checkout-sessions#cycle-de-vie). */
+  status: "created" | "pending_payment" | "completed" | "expired" | "cancelled";
+  /** Vos données libres. Voir [Metadata](/developers/metadata). */
+  metadata: Record<string, unknown> | null;
+  /** Page de paiement hébergée où rediriger votre client. Elle est sur le domaine de la boutique quand l'option Domaine personnalisé est active. */
+  checkout_url: string;
+  /** Fin de validité, 30 minutes après la création. */
+  expires_at: string | null;
+  /** Dernière tentative de paiement du client, `null` tant qu'il n'a rien lancé. */
+  payment: Payment | null;
+  [field: string]: unknown;
+}
+
+export interface Wallet {
+  /** Identifiant du solde (`wal_…`) */
+  id: string;
+  object: "wallet";
+  /** `true` pour de l'argent réel (clé live), `false` en sandbox */
+  livemode: boolean;
+  /** Date de création, ISO 8601 */
+  created: string | null;
+  /** Canal */
+  channel: "mobile_money" | "card";
+  /** Pays, `null` pour la carte. */
+  country: string | null;
+  /** Opérateur, `null` pour la carte. */
+  provider: string | null;
+  /** Devise du solde */
+  currency: string;
+  /** Disponible pour un retrait, en unités mineures. */
+  available_balance: number;
+  /** Comptabilisé mais pas encore disponible (carte : jusqu'à ce que les fonds nous soient versés, en général sous 5 jours), en unités mineures. */
+  pending_balance: number;
+  [field: string]: unknown;
+}
+
+export interface Payout {
+  /** Identifiant du retrait (`po_…`) */
+  id: string;
+  object: "payout";
+  /** `true` pour de l'argent réel (clé live), `false` en sandbox */
+  livemode: boolean;
+  /** Date de création, ISO 8601 */
+  created: string | null;
+  /** Montant demandé, débité en totalité de votre solde. */
+  amount: number;
+  /** Commission Mercy Pay retenue, 2 % de `amount`. */
+  fee_amount: number;
+  /** Montant réellement envoyé (`amount` moins `fee_amount`). */
+  net_amount: number;
+  /** Devise du solde source */
+  currency: string;
+  destination: { type: "mobile_money"; country: string; provider: string; phone: string };
+  /** Voir [Retraits](/payouts/overview#statuts). */
+  status: "requested" | "approved" | "processing" | "paid" | "failed" | "rejected" | "canceled";
+  /** Précise un retrait en cours. `delayed` : l'opérateur est indisponible et le retrait attend son retour, vous pouvez l'annuler. `pending_processing` : le retrait n'est pas encore parti, il partira automatiquement. `null` sinon. */
+  status_detail: "delayed" | "pending_processing" | null;
+  /** D'où vient le retrait. Vide pour ceux créés avant le 7 novembre 2026. */
+  origin: "dashboard" | "api" | "automatic" | null;
+  /** Motif d'échec stable, par exemple `recipient_not_found`. Voir [Erreurs](/developers/errors) */
+  failure_code: string | null;
+  /** Raison de l'échec ou du refus */
+  failure_reason: string | null;
+  /** Vos données libres. Voir [Metadata](/developers/metadata). */
+  metadata: Record<string, unknown> | null;
+  [field: string]: unknown;
+}
+
+export interface PriceOption {
+  /** Identifiant, à renvoyer pour modifier ce tarif */
+  id: number;
+  /** Nom du tarif */
+  label: string;
+  /** Prix en unités mineures */
+  amount: number;
+  [field: string]: unknown;
+}
+
+export interface CartItem {
+  /** Identifiant, à renvoyer pour modifier cet article */
+  id: number;
+  /** Nom de l'article */
+  name: string;
+  /** Description */
+  description: string | null;
+  /** Prix unitaire en unités mineures */
+  unit_amount: number;
+  /** Quantité minimale */
+  min_quantity: number | null;
+  /** Quantité maximale */
+  max_quantity: number | null;
+  variants: Array<{ id: number; label: string; unit_amount: number | null }>;
+  [field: string]: unknown;
+}
+
+export interface CustomField {
+  /** Clé unique : lettres, chiffres, `_` et `-`. 64 caractères maximum. */
+  id: string;
+  /** Type de champ */
+  type: "text" | "select" | "multi_select" | "checkbox" | "file";
+  /** Libellé affiché */
+  label: string;
+  /** Aide sous le champ */
+  help_text: string | null;
+  /** Champ obligatoire */
+  required: boolean;
+  /** `select` et `multi_select` : les choix, 50 maximum. */
+  options: string[];
+  /** `file` : taille maximale en Ko, 10240 au plus. Images et PDF uniquement. */
+  max_file_size_kb: number | null;
+  [field: string]: unknown;
+}
+
+export interface PaymentLink {
+  /** Identifiant du lien (`plink_…`) */
+  id: string;
+  object: "payment_link";
+  /** `true` pour de l'argent réel (clé live), `false` en sandbox */
+  livemode: boolean;
+  /** Date de création, ISO 8601 */
+  created: string | null;
+  /** `one_time` (un paiement) ou `recurring` (inscription à un plan). */
+  type: "one_time" | "recurring";
+  /** `fixed`, `flexible` (montant libre), `options` (plusieurs tarifs) ou `cart` (panier). Toujours `fixed` pour un lien `recurring`. */
+  pricing_mode: "fixed" | "flexible" | "options" | "cart";
+  /** Titre affiché au client */
+  title: string;
+  /** Description */
+  description: string | null;
+  /** Prix fixe, en unités mineures */
+  amount: number | null;
+  /** Montant libre : minimum accepté */
+  minimum_amount: number | null;
+  /** Devise du lien */
+  currency: string;
+  /** Plan d'un lien récurrent (`plan_…`), `null` sinon */
+  plan: string | null;
+  price_options: PriceOption[];
+  items: CartItem[];
+  custom_fields: CustomField[];
+  /** Demande le téléphone du payeur */
+  collect_phone: boolean;
+  /** Demande l'adresse du payeur */
+  collect_address: boolean;
+  /** Affiché après un paiement réussi */
+  after_payment_message: string | null;
+  /** `false` : le lien n'accepte plus de paiement */
+  is_active: boolean;
+  /** Plafond de `uses_count`. Une session en cours réserve une place jusqu'à son expiration. */
+  max_uses: number | null;
+  /** Paiements réussis, ou inscriptions pour un lien `recurring` */
+  uses_count: number;
+  /** Ouvertures de la page du lien */
+  views_count: number;
+  /** Fin de validité */
+  expires_at: string | null;
+  /** Date d'archivage */
+  archived_at: string | null;
+  /** Retour après paiement réussi */
+  success_url: string | null;
+  /** Retour si le client abandonne */
+  cancel_url: string | null;
+  /** Vos données libres. Voir [Metadata](/developers/metadata). */
+  metadata: Record<string, unknown> | null;
+  /** Page publique du lien, à partager. Elle est sur le domaine de la boutique quand l'option Domaine personnalisé est active. */
+  url: string;
+  [field: string]: unknown;
+}
+
+export interface Plan {
+  /** Identifiant du plan (`plan_…`) */
+  id: string;
+  object: "plan";
+  /** `true` pour de l'argent réel (clé live), `false` en sandbox */
+  livemode: boolean;
+  /** Date de création, ISO 8601 */
+  created: string | null;
+  /** Nom affiché au client */
+  name: string;
+  /** Description */
+  description: string | null;
+  /** Prix d'un cycle, en unités mineures */
+  amount: number;
+  /** Devise */
+  currency: string;
+  /** Rythme */
+  interval: "daily" | "weekly" | "monthly" | "yearly";
+  /** Nombre d'`interval` par cycle : `monthly` et `3`, tous les 3 mois. */
+  interval_count: number;
+  /** Jours d'essai, `0` sans essai */
+  trial_period_days: number;
+  /** `archived` : plus de nouvel abonné */
+  status: "active" | "archived";
+  /** Vos abonnés peuvent passer à ce plan depuis leur espace client. */
+  portal_switchable: boolean;
+  /** Abonnements en essai, actifs, en retard, impayés ou en pause. Renvoyé par la liste seulement. */
+  active_subscriptions_count: number;
+  /** Vos données libres. Voir [Metadata](/developers/metadata). */
+  metadata: Record<string, unknown> | null;
+  [field: string]: unknown;
+}
+
+export interface Subscription {
+  /** Identifiant de l'abonnement (`sub_…`) */
+  id: string;
+  object: "subscription";
+  /** `true` pour de l'argent réel (clé live), `false` en sandbox */
+  livemode: boolean;
+  /** Date de création, ISO 8601 */
+  created: string | null;
+  plan: Plan;
+  /** Plan appliqué à la prochaine échéance (`plan_…`), `null` sinon */
+  pending_plan: string | null;
+  /** Moyen choisi à l'inscription */
+  payment_method: "card" | "mobile_money";
+  /** Client (`cus_…`). Avec `expand[]=customer`, le client complet */
+  customer: string | null;
+  /** Nom du client */
+  customer_name: string;
+  /** E-mail du client : reçus, rappels et accès à l'espace client */
+  customer_email: string;
+  /** Numéro mobile money */
+  customer_phone: string | null;
+  /** Pays du numéro */
+  customer_country: string | null;
+  /** Opérateur du numéro */
+  customer_provider: string | null;
+  /** Voir [le cycle de vie](/subscriptions/overview#cycle-de-vie). */
+  status: "incomplete" | "trialing" | "active" | "past_due" | "unpaid" | "paused" | "canceled";
+  /** Début de la période en cours */
+  current_period_start: string | null;
+  /** Fin de la période en cours */
+  current_period_end: string | null;
+  /** Fin de l'essai */
+  trial_ends_at: string | null;
+  /** Prochaine échéance */
+  next_billing_at: string | null;
+  /** `true` : s'arrête à la fin de la période payée */
+  cancel_at_period_end: boolean;
+  /** Date d'annulation */
+  canceled_at: string | null;
+  /** Date de mise en pause */
+  paused_at: string | null;
+  /** Reprise automatique prévue */
+  resumes_at: string | null;
+  /** Nombre d'échéances après lequel l'abonnement s'arrête, `null` sans limite. */
+  max_cycles: number | null;
+  /** Échéances déjà facturées */
+  cycles_billed: number;
+  /** Vos données libres. Voir [Metadata](/developers/metadata). */
+  metadata: Record<string, unknown> | null;
+  next_action: NextAction;
+  [field: string]: unknown;
+}
+
+export interface PaymentMethod {
+  /** Identifiant du moyen de paiement (`pm_…`) */
+  id: string;
+  object: "payment_method";
+  /** `true` pour de l'argent réel (clé live), `false` en sandbox */
+  livemode: boolean;
+  /** Date de création, ISO 8601 */
+  created: string | null;
+  /** Type */
+  type: "card" | "mobile_money";
+  /** Libellé lisible, par exemple `Visa •• 4242` */
+  label: string;
+  /** Carte : marque */
+  brand: string | null;
+  /** Carte : 4 derniers chiffres */
+  last4: string | null;
+  /** Carte : mois d'expiration */
+  exp_month: number | null;
+  /** Carte : année d'expiration */
+  exp_year: number | null;
+  /** Mobile money : pays */
+  country: string | null;
+  /** Mobile money : opérateur */
+  provider: string | null;
+  /** Mobile money : les 2 derniers chiffres. Le numéro complet n'est jamais renvoyé. */
+  phone_last_digits: string | null;
+  /** `true` dès qu'un paiement a réussi avec ce moyen. Un numéro est confirmé ainsi, sans SMS. */
+  verified: boolean;
+  [field: string]: unknown;
+}
+
+export interface Customer {
+  /** Identifiant du client (`cus_…`) */
+  id: string;
+  object: "customer";
+  /** `true` pour de l'argent réel (clé live), `false` en sandbox */
+  livemode: boolean;
+  /** Date de création, ISO 8601 */
+  created: string | null;
+  /** E-mail, unique par environnement */
+  email: string;
+  /** Nom */
+  name: string | null;
+  /** Vos données libres. Voir [Metadata](/developers/metadata). */
+  metadata: Record<string, unknown> | null;
+  /** Moyen essayé en premier (`pm_…`), `null` si aucun */
+  default_payment_method: string | null;
+  /** Moyens enregistrés, du plus ancien au plus récent. Renvoyé par le détail d'un client. */
+  payment_methods: PaymentMethod[];
+  /** Nombre d'abonnements. Renvoyé par la liste. */
+  subscriptions_count: number;
+  [field: string]: unknown;
+}
+
+export interface Invoice {
+  /** Identifiant de la facture (`in_…`) */
+  id: string;
+  object: "invoice";
+  /** `true` pour de l'argent réel (clé live), `false` en sandbox */
+  livemode: boolean;
+  /** Date de création, ISO 8601 */
+  created: string | null;
+  /** Numéro lisible, par exemple `F2026-000019` */
+  number: string;
+  /** Abonnement (`sub_…`). Avec `expand[]=subscription`, l'abonnement complet */
+  subscription: string;
+  /** `first` (premier paiement qui active l'abonnement), `cycle` (échéance) ou `proration` (différence payée pour un plan plus cher). */
+  kind: "first" | "cycle" | "proration";
+  /** Montant en unités mineures */
+  amount: number;
+  /** Devise */
+  currency: string;
+  /** Début de la période facturée */
+  period_start: string;
+  /** Fin de la période facturée */
+  period_end: string;
+  /** Échéance */
+  due_at: string;
+  /** `failed` : toutes les tentatives ont échoué. `canceled` : abonnement annulé avant paiement. */
+  status: "pending" | "paid" | "failed" | "canceled";
+  /** Tentatives d'encaissement déjà faites */
+  attempt_count: number;
+  /** Prochaine tentative automatique, `null` s'il n'y en a pas */
+  next_attempt_at: string | null;
+  /** Raison du dernier échec, lisible par votre client */
+  failure_reason: string | null;
+  /** Vos données libres. Voir [Metadata](/developers/metadata). */
+  metadata: Record<string, unknown> | null;
+  /** Paiement qui a réglé la facture (`pay_…`), `null` sinon. Avec `expand[]=payment`, le paiement complet */
+  payment: string | null;
+  /** Mobile money : page où le client paie cette facture, tant qu'elle est payable */
+  pay_url: string | null;
+  /** Date de paiement */
+  paid_at: string | null;
+  /** Date d'annulation */
+  canceled_at: string | null;
+  [field: string]: unknown;
+}
+
+export interface Event {
+  /** Identifiant (`evt_…`), le même que dans le webhook */
+  id: string;
+  object: "event";
+  livemode: boolean;
+  created: string;
+  /** Type de l'événement. Voir la liste commentée dans Événements. */
+  type: "payment.succeeded" | "payment.failed" | "payment.refunded" | "payment.disputed" | "payment.dispute_closed" | "refund.succeeded" | "refund.failed" | "refund.canceled" | "payout.paid" | "payout.failed" | "payout.canceled" | "subscription.created" | "subscription.updated" | "subscription.past_due" | "subscription.unpaid" | "subscription.paused" | "subscription.resumed" | "subscription.canceled" | "invoice.created" | "invoice.upcoming" | "invoice.paid" | "invoice.canceled" | "invoice.payment_failed" | "checkout_session.completed" | "provider_status.changed" | "account.updated";
+  /** L'objet concerné, tel qu'envoyé dans le webhook */
+  data: Record<string, unknown>;
+  [field: string]: unknown;
+}
+
+export interface WebhookEndpoint {
+  /** Identifiant (`we_…`) */
+  id: string;
+  object: "webhook_endpoint";
+  livemode: boolean;
+  created: string;
+  url: string;
+  /** Types d'événements envoyés à cet endpoint */
+  events: Array<"payment.succeeded" | "payment.failed" | "payment.refunded" | "payment.disputed" | "payment.dispute_closed" | "refund.succeeded" | "refund.failed" | "refund.canceled" | "payout.paid" | "payout.failed" | "payout.canceled" | "subscription.created" | "subscription.updated" | "subscription.past_due" | "subscription.unpaid" | "subscription.paused" | "subscription.resumed" | "subscription.canceled" | "invoice.created" | "invoice.upcoming" | "invoice.paid" | "invoice.canceled" | "invoice.payment_failed" | "checkout_session.completed" | "provider_status.changed" | "account.updated">;
+  /** `null` : reçoit les événements sandbox et live */
+  environment: "sandbox" | "live" | null;
+  status: "enabled" | "disabled";
+  /** Secret de signature, renvoyé une seule fois, à la création */
+  secret: string;
+  /** Pourquoi l'endpoint est désactivé : `failing` après 3 jours sans aucun événement accepté, `manual` à votre demande. `null` s'il est actif */
+  disabled_reason: "failing" | "manual" | null;
+  [field: string]: unknown;
+}
+
+export interface Refund {
+  /** Identifiant du remboursement (`re_…`) */
+  id: string;
+  object: "refund";
+  livemode: boolean;
+  created: string;
+  /** Le paiement remboursé (`pay_…`) */
+  payment: string;
+  /** Montant rendu au client, en unités mineures de la devise du paiement : tout ce qu'il a payé. */
+  amount: number;
+  /** Frais de remboursement débités de votre solde, en plus du montant. */
+  fee_amount: number;
+  currency: string;
+  /** `pending` : envoyé, réponse attendue. `processing` : en route vers le client. `succeeded` : arrivé. `failed` : non envoyé, montant et frais revenus sur votre solde. `canceled` : annulé pendant qu'il attendait l'opérateur. */
+  status: "pending" | "processing" | "succeeded" | "failed" | "canceled";
+  /** `delayed` : l'opérateur est indisponible et le remboursement attend son retour, vous pouvez l'annuler. */
+  status_detail: "delayed" | null;
+  origin: "dashboard" | "api" | "admin";
+  /** Motif donné à la demande. */
+  reason: string | null;
+  failure_code: string | null;
+  failure_reason: string | null;
+  succeeded_at: string | null;
+  [field: string]: unknown;
+}
+
+export interface WebhookDelivery {
+  /** Identifiant de l'envoi (`whd_…`) */
+  id: string;
+  object: "webhook_delivery";
+  livemode: boolean;
+  created: string;
+  /** L'événement envoyé (`evt_…`) */
+  event: string;
+  /** L'endpoint visé (`we_…`) */
+  webhook_endpoint: string | null;
+  url: string | null;
+  status: "pending" | "delivered" | "failed";
+  attempt_count: number;
+  /** Dernier code HTTP reçu */
+  response_code: number | null;
+  next_retry_at: string | null;
+  delivered_at: string | null;
+  attempts: Array<{ number: number; attempted_at: string; status_code: number | null; duration_ms: number | null; error: string | null }>;
+  [field: string]: unknown;
+}
+
+export interface WalletTransfer {
+  /** Identifiant du virement (`wtr_…`) */
+  id: string;
+  object: "wallet_transfer";
+  livemode: boolean;
+  created: string;
+  /** Le solde débité (`wal_…`) */
+  from_wallet: string;
+  /** Le solde crédité (`wal_…`) */
+  to_wallet: string;
+  amount: number;
+  currency: string;
+  [field: string]: unknown;
+}
+
+export interface RequestLog {
+  /** Identifiant de la requête (`req_…`), le même que l'en-tête `Request-Id` reçu */
+  id: string;
+  object: "request_log";
+  /** `true` pour une clé live, `false` en sandbox */
+  livemode: boolean;
+  /** Date de la requête, ISO 8601 */
+  created: string | null;
+  /** Méthode HTTP */
+  method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+  /** Chemin appelé, par exemple `/v1/payments` */
+  path: string;
+  /** Statut HTTP renvoyé */
+  status: number;
+  /** Le `error.code` renvoyé, `null` si la requête a réussi */
+  error_code: string | null;
+  /** La `Idempotency-Key` envoyée, s'il y en avait une */
+  idempotency_key: string | null;
+  /** Durée de traitement, en millisecondes */
+  duration_ms: number;
+  [field: string]: unknown;
+}

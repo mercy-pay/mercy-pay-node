@@ -1,0 +1,56 @@
+{
+  "name": "@mercy-pay/node",
+  "version": "0.1.0",
+  "description": "La bibliothèque Node.js officielle de l'API Mercy Pay : paiements mobile money et carte.",
+  "keywords": [
+    "mercy pay",
+    "paiement",
+    "mobile money",
+    "webhooks",
+    "api"
+  ],
+  "homepage": "https://docs.mercy-pay.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mercy-pay/mercy-pay-node.git"
+  },
+  "bugs": "https://github.com/mercy-pay/mercy-pay-node/issues",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "generate": "python3 scripts/generate.py",
+    "build": "rm -rf dist && tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
