@@ -3,7 +3,7 @@
 import type { Page } from './page.js';
 import { Resource, type RequestOptions } from './resource.js';
 import type { Account, FeeQuote, ProviderStatus } from './extra-types.js';
-import type { CheckoutSession, Customer, Event, Invoice, Payment, PaymentLink, PaymentMethod, Payout, Plan, Refund, RequestLog, Subscription, Wallet, WalletTransfer, WebhookDelivery, WebhookEndpoint } from './types.js';
+import type { CheckoutSession, Customer, EmbedDomain, Event, Invoice, Payment, PaymentLink, PaymentMethod, Payout, Plan, Refund, RequestLog, Subscription, Wallet, WalletTransfer, WebhookDelivery, WebhookEndpoint } from './types.js';
 
 export class AccountResource extends Resource {
   /** Lire le compte. GET /api/v1/account */
@@ -390,5 +390,32 @@ export class TestHelpersResource extends Resource {
   /** Déclencher un événement de test. POST /api/v1/test_helpers/events */
   triggerEvent(params: Record<string, unknown> = {}, options: RequestOptions = {}): Promise<Event> {
     return this.requestObject<Event>('POST', `test_helpers/events`, params, options);
+  }
+}
+
+export class EmbedDomainsResource extends Resource {
+  /** Ajouter un site. POST /api/v1/embed_domains */
+  create(params: Record<string, unknown> = {}, options: RequestOptions = {}): Promise<EmbedDomain> {
+    return this.requestObject<EmbedDomain>('POST', `embed_domains`, params, options);
+  }
+
+  /** Lister les sites autorisés. GET /api/v1/embed_domains */
+  list(params: Record<string, unknown> = {}): Promise<Page<EmbedDomain>> {
+    return this.requestList<EmbedDomain>(`embed_domains`, params);
+  }
+
+  /** Lire un site autorisé. GET /api/v1/embed_domains/{id} */
+  retrieve(id: string, params: Record<string, unknown> = {}): Promise<EmbedDomain> {
+    return this.requestObject<EmbedDomain>('GET', `embed_domains/${encodeURIComponent(id)}`, params);
+  }
+
+  /** Retirer un site. DELETE /api/v1/embed_domains/{id} */
+  delete(id: string, params: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
+    return this.requestObject<Record<string, unknown>>('DELETE', `embed_domains/${encodeURIComponent(id)}`, params);
+  }
+
+  /** Vérifier un site maintenant. POST /api/v1/embed_domains/{id}/verify */
+  verify(id: string, params: Record<string, unknown> = {}, options: RequestOptions = {}): Promise<EmbedDomain> {
+    return this.requestObject<EmbedDomain>('POST', `embed_domains/${encodeURIComponent(id)}/verify`, params, options);
   }
 }

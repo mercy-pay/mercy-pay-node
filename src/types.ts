@@ -1,9 +1,9 @@
 // Généré par scripts/generate.py depuis la référence de l'API. Ne pas modifier à la main.
 
 export interface NextAction {
-  /** `card_payment` (confirmer une carte depuis votre formulaire) ou `redirect` (envoyer le client sur `redirect_url`). */
+  /** `card_payment` : la carte doit encore être saisie et confirmée par votre client, ce que fait le [paiement intégré](/payments/embedded). `redirect` : envoyer le client sur `redirect_url`. */
   type: "card_payment" | "redirect";
-  /** `card_payment` : secret qui confirme le paiement depuis votre formulaire. */
+  /** `card_payment` : secret de confirmation de la carte, lié au réseau carte. Préférez le [paiement intégré](/payments/embedded), qui s'en charge pour vous. */
   client_secret: string;
   /** `redirect` : page hébergée où le client termine. */
   redirect_url: string;
@@ -90,6 +90,10 @@ export interface CheckoutSession {
   allowed_countries: string[] | null;
   /** Voir [Sessions de paiement](/payments/checkout-sessions#cycle-de-vie). */
   status: "created" | "pending_payment" | "completed" | "expired" | "cancelled";
+  /** `hosted` : page de paiement Mercy Pay. `embedded` : formulaire affiché dans votre page. */
+  ui_mode: "hosted" | "embedded";
+  /** En mode `embedded` seulement : à transmettre au navigateur pour afficher le formulaire de paiement de cette session. Il n'ouvre que ce formulaire, rien d'autre. Ne le confondez pas avec votre clé API, qui reste sur votre serveur. `null` en mode `hosted`. */
+  client_secret: string | null;
   /** Vos données libres. Voir [Metadata](/developers/metadata). */
   metadata: Record<string, unknown> | null;
   /** Page de paiement hébergée où rediriger votre client. Elle est sur le domaine de la boutique quand l'option Domaine personnalisé est active. */
@@ -556,5 +560,26 @@ export interface RequestLog {
   idempotency_key: string | null;
   /** Durée de traitement, en millisecondes */
   duration_ms: number;
+  [field: string]: unknown;
+}
+
+export interface EmbedDomain {
+  /** Identifiant du site (`edom_…`) */
+  id: string;
+  object: "embed_domain";
+  /** `true` pour une clé live, `false` en sandbox. Un site autorisé vaut pour les deux environnements. */
+  livemode: boolean;
+  /** Date d'ajout, ISO 8601 */
+  created: string | null;
+  /** Le domaine, par exemple `boutique.com`. Il autorise aussi ses sous-domaines. */
+  hostname: string;
+  /** `pending` tant que l'enregistrement TXT n'est pas trouvé, `verified` ensuite, `failed` s'il a disparu depuis plus de 7 jours. */
+  status: "pending" | "verified" | "failed";
+  /** L'enregistrement DNS à créer chez votre hébergeur de domaine. */
+  verification: { type: "TXT"; name: string; value: string };
+  /** Première vérification réussie */
+  verified_at: string | null;
+  /** Dernière lecture de l'enregistrement. Elle a lieu toutes les heures. */
+  last_checked_at: string | null;
   [field: string]: unknown;
 }

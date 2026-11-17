@@ -21,10 +21,11 @@ import {
   WalletTransfersResource,
   WalletsResource,
   WebhookEndpointsResource,
+  EmbedDomainsResource,
 } from './resources.js';
 import { webhooks } from './webhooks.js';
 
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
 
 export interface MercyPayOptions {
   /** https://mercy-pay.com by default. */
@@ -71,6 +72,7 @@ export class MercyPay {
   readonly wallets = new WalletsResource(this);
   readonly walletTransfers = new WalletTransfersResource(this);
   readonly webhookEndpoints = new WebhookEndpointsResource(this);
+  readonly embedDomains = new EmbedDomainsResource(this);
 
   private readonly baseUrl: string;
   private readonly timeout: number;
