@@ -7,6 +7,12 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 spec = json.load(open(os.path.join(root, 'test/openapi.json')))
 ops = json.load(open(os.path.join(root, 'scripts/operations.json')))
 schemas = spec['components']['schemas']
+catalog = json.load(open(os.path.join(root, 'test/catalog.json')))
+params_by_ref = spec['components'].get('parameters', {})
+
+# Request fields whose values come from the catalog: known values, any other string still
+# accepted so a new operator never breaks a build.
+CATALOG_FIELDS = {'provider': 'MobileMoneyProvider', 'country': 'CountryCode', 'allowed_countries': 'CountryCode[]'}
 
 def ts_type(prop):
     if '$ref' in prop:
@@ -49,7 +55,71 @@ for name, schema in schemas.items():
     lines.append('  [field: string]: unknown;')
     lines.append('}')
     lines.append('')
+def pascal(s):
+    return s[0].upper() + s[1:]
+
+def quoted(name):
+    return name if re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', name) else json.dumps(name)
+
+param_fields = {}
+for path, methods in spec['paths'].items():
+    for verb, d in methods.items():
+        fields = []
+        for p in d.get('parameters', []):
+            p = params_by_ref[p['$ref'].split('/')[-1]] if '$ref' in p else p
+            if p['in'] == 'query':
+                fields.append((p['name'], p.get('schema', {}), p.get('required', False), p.get('description')))
+        body = d.get('requestBody', {}).get('content', {}).get('application/json', {}).get('schema', {})
+        required = set(body.get('required', []))
+        for name, prop in body.get('properties', {}).items():
+            fields.append((name, prop, name in required, prop.get('description')))
+        param_fields[d['operationId']] = fields
+
+lines.append('// Ce que chaque opération accepte.')
+lines.append('')
+for op_id, fields in param_fields.items():
+    lines.append(f'export interface {pascal(op_id)}Params {{')
+    groups = {}
+    for name, prop, required, desc in fields:
+        # The client writes `expand: [...]` as expand[]=… and `created: { gte }` as created[gte]=….
+        if name.endswith('[]'):
+            name = name[:-2]
+        group = re.match(r'^(\w+)\[(\w+)\]$', name)
+        if group:
+            groups.setdefault(group.group(1), []).append((group.group(2), ts_type(prop), desc))
+            continue
+        if desc:
+            lines.append(f'  /** {desc.replace("*/", "")} */')
+        kind = CATALOG_FIELDS.get(name) if prop.get('type') in ('string', 'array') and not prop.get('enum') else None
+        lines.append(f'  {quoted(name)}{"" if required else "?"}: {kind or ts_type(prop)};')
+    for group, members in groups.items():
+        lines.append('  ' + group + '?: { ' + '; '.join(f'{m}?: {t}' for m, t, _ in members) + ' };')
+    lines.append('}')
+    lines.append('')
+
+lines.insert(2, "import type { CountryCode, MobileMoneyProvider } from './catalog.js';")
+lines.insert(3, '')
 open(os.path.join(root, 'src/types.ts'), 'w').write('\n'.join(lines))
+
+# The catalog as constants: autocompletion for operators, countries and event types.
+countries = catalog['countries']
+providers = [p['code'] for c in countries for p in c['providers']]
+cat = ['// Généré par scripts/generate.py depuis le catalogue Mercy Pay. Ne pas modifier à la main.', '']
+cat.append('/** The open countries and their mobile money operators. */')
+cat.append('export const COUNTRIES = ' + json.dumps([{'code': c['code'], 'name': c['name'], 'currency': c['currency'], 'providers': c['providers']} for c in countries], ensure_ascii=False, indent=2) + ' as const;')
+cat.append('')
+cat.append('/** A mobile money operator code. Any other string stays accepted: the list grows. */')
+cat.append('export type MobileMoneyProvider = ' + ' | '.join(json.dumps(p) for p in providers) + ' | (string & {});')
+cat.append('')
+cat.append('/** A country code (ISO 3166-1 alpha-3). Any other string stays accepted: the list grows. */')
+cat.append('export type CountryCode = ' + ' | '.join(json.dumps(c['code']) for c in countries) + ' | (string & {});')
+cat.append('')
+cat.append('/** Every webhook event type. */')
+cat.append('export const EVENT_TYPES = ' + json.dumps(catalog['event_types']) + ' as const;')
+cat.append('')
+cat.append('export type EventType = (typeof EVENT_TYPES)[number];')
+cat.append('')
+open(os.path.join(root, 'src/catalog.ts'), 'w').write('\n'.join(cat))
 
 # Which object each operation returns, read from its success response.
 op_by_id, op_is_list, op_summary = {}, {}, {}
@@ -87,13 +157,16 @@ for service, items in classes.items():
         path = '`' + re.sub(r'\{\}', lambda m, it=iter(o['ids']): '${enc(' + camel(next(it)) + ')}', o['path']) + '`'
         is_list = op_is_list[o['operationId']]
         out.append(f'  /** {op_summary[o["operationId"]]}. {o["http"]} /api/v1/{o["path"].replace("{}", "{id}")} */')
+        ptype = pascal(o['operationId']) + 'Params'
+        used.add(ptype)
+        has_required = any(r for _, _, r, _ in param_fields[o['operationId']])
+        param_arg = f'params: {ptype}' + ('' if has_required else ' = {}')
         if is_list:
-            args.append('params: Record<string, unknown> = {}')
+            args.append(param_arg)
             out.append(f'  {method}({", ".join(args)}): Promise<Page<{returns}>> {{')
             out.append(f'    return this.requestList<{returns}>({path}, params);')
         else:
-            if o['http'] != 'DELETE' or True:
-                args.append('params: Record<string, unknown> = {}')
+            args.append(param_arg)
             if o['http'] == 'POST':
                 args.append('options: RequestOptions = {}')
             extra = ', options' if o['http'] == 'POST' else ''
@@ -107,4 +180,4 @@ extra = {'Account', 'FeeQuote', 'ProviderStatus'}
 types_import = "import type { " + ', '.join(sorted(used & extra)) + " } from './extra-types.js';\nimport type { " + ', '.join(sorted(used - extra)) + " } from './types.js';"
 text = '\n'.join(out).replace('__TYPES__', types_import).replace('enc(', 'encodeURIComponent(')
 open(os.path.join(root, 'src/resources.ts'), 'w').write(text)
-print('types:', len(schemas) - 1, 'resources:', len(classes), 'operations:', len(ops))
+print('params:', len(param_fields), 'types:', len(schemas) - 1, 'resources:', len(classes), 'operations:', len(ops))

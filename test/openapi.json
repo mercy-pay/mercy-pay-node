@@ -8440,6 +8440,104 @@
           }
         }
       }
+    },
+    "/api/v1/test_helpers/mobile_money_numbers": {
+      "get": {
+        "summary": "Lister les numéros de test mobile money",
+        "description": "Les numéros de la sandbox et ce que chacun produit : un paiement réussi, refusé avec un `failure_code` donné, ou qui reste en attente, et un retrait refusé. Utilisez-les dans vos tests plutôt que de les recopier. Ils ne fonctionnent qu'avec une clé sandbox.",
+        "operationId": "listTestMobileMoneyNumbers",
+        "tags": [
+          "Événements"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Un seul pays, par exemple `CMR`"
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Un seul opérateur, par exemple `MTN_MOMO_CMR`"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Les numéros de test",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "const": "list"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TestMobileMoneyNumber"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "object": "list",
+                  "url": "/api/v1/test_helpers/mobile_money_numbers",
+                  "has_more": false,
+                  "data": [
+                    {
+                      "country": "CMR",
+                      "provider": "ORANGE_CMR",
+                      "phone": "237693456789",
+                      "applies_to": "payment",
+                      "outcome": "succeeded",
+                      "failure_code": null
+                    },
+                    {
+                      "country": "CMR",
+                      "provider": "ORANGE_CMR",
+                      "phone": "237693456049",
+                      "applies_to": "payment",
+                      "outcome": "failed",
+                      "failure_code": "insufficient_balance"
+                    },
+                    {
+                      "country": "CMR",
+                      "provider": "ORANGE_CMR",
+                      "phone": "237693456129",
+                      "applies_to": "payment",
+                      "outcome": "pending",
+                      "failure_code": null
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10699,6 +10797,47 @@
             ],
             "format": "date-time",
             "description": "Dernière lecture de l'enregistrement. Elle a lieu toutes les heures."
+          }
+        }
+      },
+      "TestMobileMoneyNumber": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string",
+            "description": "Pays (ISO 3166-1 alpha-3)"
+          },
+          "provider": {
+            "type": "string",
+            "description": "Code de l'opérateur, par exemple `MTN_MOMO_CMR`"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Numéro au format international, sans `+`"
+          },
+          "applies_to": {
+            "type": "string",
+            "enum": [
+              "payment",
+              "payout"
+            ],
+            "description": "Un paiement ou un retrait vers ce numéro"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "succeeded",
+              "failed",
+              "pending"
+            ],
+            "description": "Le résultat obtenu à chaque fois"
+          },
+          "failure_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Le `failure_code` du paiement échoué, quand le numéro en produit un précis"
           }
         }
       }

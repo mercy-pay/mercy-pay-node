@@ -29,7 +29,7 @@ describe('client', () => {
   it('retries with the same idempotency key', async () => {
     const { client, requests } = fakeClient(new TypeError('fetch failed'), json(502, {}), json(201, { data: { id: 'po_1' } }));
 
-    const payout = await client.payouts.create({ amount: 4000 });
+    const payout = await client.payouts.create({ amount: 4000, currency: 'XAF' });
 
     expect(payout.id).toBe('po_1');
     expect(requests).toHaveLength(3);
@@ -51,12 +51,12 @@ describe('client', () => {
       json(402, { error: { type: 'payment_error', code: 'payment_declined', message: 'Refusé.' } }),
     );
 
-    const error = await client.payments.create({ amount: -1 }).catch((caught: unknown) => caught);
+    const error = await client.payments.create({ amount: -1, currency: 'XAF' }).catch((caught: unknown) => caught);
     expect(error).toBeInstanceOf(InvalidRequestError);
     expect(error).toMatchObject({ status: 422, code: 'validation_failed', param: 'amount', requestId: 'req_9', errors: { amount: ['Montant invalide.'] } });
     expect(requests).toHaveLength(1);
 
-    await expect(client.payments.create({ amount: 1 })).rejects.toBeInstanceOf(PaymentError);
+    await expect(client.payments.create({ amount: 1, currency: 'XAF' })).rejects.toBeInstanceOf(PaymentError);
   });
 
   it('iterates through every page', async () => {

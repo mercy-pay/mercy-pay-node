@@ -6,3 +6,5 @@ export type * from './types.js';
 export { constructEvent, verifySignature, DEFAULT_TOLERANCE_SECONDS, type VerifyOptions } from './webhooks.js';
 export { MercyPay as default } from './client.js';
 export type * from './extra-types.js';
+export { COUNTRIES, EVENT_TYPES, type CountryCode, type EventType, type MobileMoneyProvider } from './catalog.js';
+export { WaitTimeoutError, type TestOutcome, type WaitOptions } from './extras.js';

@@ -1,5 +1,7 @@
 // Généré par scripts/generate.py depuis la référence de l'API. Ne pas modifier à la main.
 
+import type { CountryCode, MobileMoneyProvider } from './catalog.js';
+
 export interface NextAction {
   /** `card_payment` : la carte doit encore être saisie et confirmée par votre client, ce que fait le [paiement intégré](/payments/embedded). `redirect` : envoyer le client sur `redirect_url`. */
   type: "card_payment" | "redirect";
@@ -582,4 +584,686 @@ export interface EmbedDomain {
   /** Dernière lecture de l'enregistrement. Elle a lieu toutes les heures. */
   last_checked_at: string | null;
   [field: string]: unknown;
+}
+
+export interface TestMobileMoneyNumber {
+  /** Pays (ISO 3166-1 alpha-3) */
+  country: string;
+  /** Code de l'opérateur, par exemple `MTN_MOMO_CMR` */
+  provider: string;
+  /** Numéro au format international, sans `+` */
+  phone: string;
+  /** Un paiement ou un retrait vers ce numéro */
+  applies_to: "payment" | "payout";
+  /** Le résultat obtenu à chaque fois */
+  outcome: "succeeded" | "failed" | "pending";
+  /** Le `failure_code` du paiement échoué, quand le numéro en produit un précis */
+  failure_code: string | null;
+  [field: string]: unknown;
+}
+
+// Ce que chaque opération accepte.
+
+export interface GetAccountParams {
+}
+
+export interface CreateFeeQuoteParams {
+  /** Le prix, en unités mineures */
+  amount: number;
+  /** Devise du prix */
+  currency: string;
+  payment_method: "mobile_money" | "card";
+  /** Pays mobile money du client. Le montant est alors converti dans sa devise si besoin. Interdit pour une carte. */
+  country?: CountryCode;
+}
+
+export interface GetProviderStatusParams {
+}
+
+export interface CreateCheckoutSessionParams {
+  /** Montant en unités mineures, au moins `1`. Voir [Montants et devises](/payments/amounts-and-currencies). */
+  amount: number;
+  /** Code devise ISO 4217 de 3 lettres, par exemple `XAF`. */
+  currency: string;
+  /** Affichée au client. 500 caractères maximum. */
+  description?: string;
+  /** Nom du payeur, prérempli */
+  payer_name?: string;
+  /** E-mail du payeur, prérempli */
+  payer_email?: string;
+  /** Téléphone du payeur, prérempli */
+  payer_phone?: string;
+  /** Retour après paiement réussi `{CHECKOUT_SESSION_ID}` y est remplacé par l'identifiant de la session (`cs_…`) au retour du client. */
+  success_url?: string;
+  /** Retour si le client abandonne `{CHECKOUT_SESSION_ID}` y est remplacé par l'identifiant de la session (`cs_…`) au retour du client. */
+  cancel_url?: string;
+  /** Ne proposer que ces moyens. Par exemple `["mobile_money"]` si vous encaissez déjà la carte ailleurs. Absent : tous les moyens ouverts. */
+  payment_method_types?: Array<"mobile_money" | "card">;
+  /** Ne proposer que ces pays mobile money (codes à 3 lettres, pays ouverts uniquement). Absent : tous les pays ouverts. */
+  allowed_countries?: CountryCode[];
+  /** `hosted` (par défaut) : vous envoyez le client sur `checkout_url`. `embedded` : le formulaire de paiement s'affiche dans votre propre page, avec le `client_secret` renvoyé. Voir [Paiement intégré](/payments/embedded). */
+  ui_mode?: "hosted" | "embedded";
+  /** Vos données libres, renvoyées dans les réponses et les webhooks. */
+  metadata?: Record<string, unknown>;
+}
+
+export interface ListCheckoutSessionsParams {
+  /** Filtre par statut */
+  status?: "created" | "pending_payment" | "completed" | "expired" | "cancelled";
+  /** Créés à partir de cette date `AAAA-MM-JJ`, incluse */
+  from?: string;
+  /** Créés jusqu'à cette date `AAAA-MM-JJ`, incluse */
+  to?: string;
+  /** Nombre d'objets. Voir [Pagination](/developers/pagination) */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour la page qui le précède */
+  ending_before?: string;
+  created?: { gte?: string; lte?: string };
+}
+
+export interface GetCheckoutSessionParams {
+}
+
+export interface CreatePaymentParams {
+  /** Montant en unités mineures, au moins `1`. Voir [Montants et devises](/payments/amounts-and-currencies). */
+  amount: number;
+  /** Code devise ISO 4217 de 3 lettres, par exemple `XAF`. En mobile money, convertie vers la devise de l'opérateur si besoin. */
+  currency: string;
+  /** Canal, `mobile_money` par défaut */
+  payment_method?: "mobile_money" | "card";
+  /** Obligatoire en mobile money. Pays ISO 3166-1 alpha-3, par exemple `CMR`. */
+  country?: CountryCode;
+  /** Obligatoire en mobile money. Code opérateur, par exemple `MTN_MOMO_CMR`. Voir [Pays et opérateurs](/payments/overview#pays-et-operateurs). */
+  provider?: MobileMoneyProvider;
+  /** Obligatoire en mobile money. Numéro avec indicatif, par exemple `237680000000`. Les espaces et le `+` sont retirés, un numéro local est complété avec l'indicatif du pays. */
+  phone?: string;
+  /** Nom du payeur */
+  payer_name?: string;
+  /** E-mail du payeur */
+  payer_email?: string;
+  /** 500 caractères maximum. Les 22 premiers, sans accents, forment le message que l'opérateur montre au client. */
+  description?: string;
+  /** Vos données libres (jusqu'à 50 clés, valeurs de 500 caractères au plus), renvoyées dans les réponses et les webhooks. Par exemple votre numéro de commande. */
+  metadata?: Record<string, unknown>;
+}
+
+export interface ListPaymentsParams {
+  /** Filtre par statut */
+  status?: "pending" | "processing" | "succeeded" | "failed" | "canceled" | "expired" | "refunded" | "disputed";
+  /** Créés à partir de cette date `AAAA-MM-JJ`, incluse */
+  from?: string;
+  /** Créés jusqu'à cette date `AAAA-MM-JJ`, incluse */
+  to?: string;
+  /** Nombre d'objets. Voir [Pagination](/developers/pagination) */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour la page qui le précède */
+  ending_before?: string;
+  /** Objets liés à recevoir en entier. Voir [Objets liés](/developers/expand) */
+  expand?: string[];
+  created?: { gte?: string; lte?: string };
+}
+
+export interface GetPaymentParams {
+  /** Objets liés à recevoir en entier. Voir [Objets liés](/developers/expand) */
+  expand?: string[];
+}
+
+export interface ListWalletsParams {
+  /** Nombre d'objets. Voir [Pagination](/developers/pagination) */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour la page qui le précède */
+  ending_before?: string;
+  created?: { gte?: string; lte?: string };
+}
+
+export interface ListWalletTransfersParams {
+  /** Nombre d'objets. Voir [Pagination](/developers/pagination) */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour la page qui le précède */
+  ending_before?: string;
+  created?: { gte?: string; lte?: string };
+}
+
+export interface CreateWalletTransferParams {
+  /** Le solde à débiter (`wal_…`), voir [Lister les soldes](/api/wallets/list) */
+  from_wallet: string;
+  /** Le solde à créditer (`wal_…`) */
+  to_wallet: string;
+  /** En unités mineures */
+  amount: number;
+}
+
+export interface CreatePayoutParams {
+  /** Montant débité de votre solde, en unités mineures */
+  amount: number;
+  /** Devise du solde source. Code devise ISO 4217 de 3 lettres, par exemple `XAF`. */
+  currency: string;
+  /** Compte de retrait enregistré dans votre tableau de bord. Remplace `destination`. */
+  destination_id?: string;
+  /** Obligatoire sans `destination_id`. */
+  destination?: { type: "mobile_money"; country: string; provider: string; phone: string };
+  /** Vos données libres (jusqu'à 50 clés, valeurs de 500 caractères au plus), renvoyées dans les réponses et les webhooks. Par exemple votre numéro de commande. */
+  metadata?: Record<string, unknown>;
+}
+
+export interface ListPayoutsParams {
+  /** Filtre par statut */
+  status?: "requested" | "approved" | "processing" | "paid" | "failed" | "rejected" | "canceled";
+  /** Filtre par devise */
+  currency?: string;
+  /** Créés à partir de cette date `AAAA-MM-JJ`, incluse */
+  from?: string;
+  /** Créés jusqu'à cette date `AAAA-MM-JJ`, incluse */
+  to?: string;
+  /** Nombre d'objets. Voir [Pagination](/developers/pagination) */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour la page qui le précède */
+  ending_before?: string;
+  created?: { gte?: string; lte?: string };
+}
+
+export interface GetPayoutParams {
+}
+
+export interface CreatePaymentLinkParams {
+  /** Titre affiché au client */
+  title: string;
+  /** Description */
+  description?: string;
+  /** Sans valeur : `fixed` si `amount` est fourni, sinon `flexible`. */
+  pricing_mode?: "fixed" | "flexible" | "options" | "cart";
+  /** Obligatoire en `fixed`. Prix en unités mineures. */
+  amount?: number;
+  /** Montant libre : minimum accepté */
+  minimum_amount?: number;
+  /** Obligatoire en `options`. Un tarif par élément. */
+  price_options?: { id: number; label: string; amount: number }[];
+  /** Obligatoire en `cart`. Un article par élément. */
+  items?: { id: number; name: string; description: string; unit_amount: number; min_quantity: number; max_quantity: number; variants: { id: number; label: string; unit_amount: number }[] }[];
+  /** Champs à remplir par le payeur. Renvoyés sous `custom_fields`. */
+  custom_fields_schema?: CustomField[];
+  /** Demande le téléphone du payeur */
+  collect_phone?: boolean;
+  /** Demande l'adresse du payeur */
+  collect_address?: boolean;
+  /** Affiché après un paiement réussi */
+  after_payment_message?: string;
+  /** Nombre de paiements au-delà duquel le lien s'arrête */
+  max_uses?: number;
+  /** Fin de validité, dans le futur */
+  expires_at?: string;
+  /** Retour après paiement réussi */
+  success_url?: string;
+  /** Retour si le client abandonne */
+  cancel_url?: string;
+  /** `true` par défaut. `false` : le lien n'accepte plus de paiement. */
+  active?: boolean;
+  /** Vos données libres, renvoyées telles quelles. 50 clés maximum, valeurs de 500 caractères maximum. */
+  metadata?: Record<string, unknown> | null;
+  /** `one_time` par défaut, ou `recurring` pour inscrire à un plan */
+  type?: "one_time" | "recurring";
+  /** Devise par défaut de votre compte si absente. Code devise ISO 4217 de 3 lettres, par exemple `XAF`. */
+  currency?: string;
+  /** Obligatoire en `recurring` : identifiant d'un plan actif (`plan_…`) */
+  plan?: string;
+}
+
+export interface ListPaymentLinksParams {
+  /** `true` ou `false` */
+  active?: boolean;
+  /** Type de lien */
+  type?: "one_time" | "recurring";
+  /** `true` pour ne lister que les liens archivés */
+  archived?: boolean;
+  /** Nombre d'objets. Voir [Pagination](/developers/pagination) */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour la page qui le précède */
+  ending_before?: string;
+  created?: { gte?: string; lte?: string };
+}
+
+export interface GetPaymentLinkParams {
+}
+
+export interface UpdatePaymentLinkParams {
+  /** Titre affiché au client */
+  title?: string;
+  /** Description */
+  description?: string;
+  /** Sans valeur : `fixed` si `amount` est fourni, sinon `flexible`. */
+  pricing_mode?: "fixed" | "flexible" | "options" | "cart";
+  /** Obligatoire en `fixed`. Prix en unités mineures. */
+  amount?: number;
+  /** Montant libre : minimum accepté */
+  minimum_amount?: number;
+  /** Obligatoire en `options`. Un tarif par élément. */
+  price_options?: { id: number; label: string; amount: number }[];
+  /** Obligatoire en `cart`. Un article par élément. */
+  items?: { id: number; name: string; description: string; unit_amount: number; min_quantity: number; max_quantity: number; variants: { id: number; label: string; unit_amount: number }[] }[];
+  /** Champs à remplir par le payeur. Renvoyés sous `custom_fields`. */
+  custom_fields_schema?: CustomField[];
+  /** Demande le téléphone du payeur */
+  collect_phone?: boolean;
+  /** Demande l'adresse du payeur */
+  collect_address?: boolean;
+  /** Affiché après un paiement réussi */
+  after_payment_message?: string;
+  /** Nombre de paiements au-delà duquel le lien s'arrête */
+  max_uses?: number;
+  /** Fin de validité, dans le futur */
+  expires_at?: string;
+  /** Retour après paiement réussi */
+  success_url?: string;
+  /** Retour si le client abandonne */
+  cancel_url?: string;
+  /** `true` par défaut. `false` : le lien n'accepte plus de paiement. */
+  active?: boolean;
+  /** Vos données libres, renvoyées telles quelles. 50 clés maximum, valeurs de 500 caractères maximum. */
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface DeletePaymentLinkParams {
+}
+
+export interface ArchivePaymentLinkParams {
+}
+
+export interface ListPaymentLinkPaymentsParams {
+  /** Statut des paiements, `succeeded` par défaut */
+  status?: string;
+  /** Nombre d'objets. Voir [Pagination](/developers/pagination) */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour la page qui le précède */
+  ending_before?: string;
+  created?: { gte?: string; lte?: string };
+}
+
+export interface CreatePlanParams {
+  /** Nom affiché au client */
+  name: string;
+  /** Prix d'un cycle, en unités mineures */
+  amount: number;
+  /** Code devise ISO 4217 de 3 lettres, par exemple `XAF`. */
+  currency: string;
+  /** Rythme */
+  interval: "daily" | "weekly" | "monthly" | "yearly";
+  /** De 1 à 365, 1 par défaut. `monthly` et `3` : tous les 3 mois. */
+  interval_count?: number;
+  /** Jours d'essai, de 0 à 365 */
+  trial_period_days?: number;
+  /** Description */
+  description?: string;
+  /** Proposé aux abonnés dans leur espace client */
+  portal_switchable?: boolean;
+  /** Vos données libres, renvoyées telles quelles. 50 clés maximum, valeurs de 500 caractères maximum. */
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface ListPlansParams {
+  /** Statut */
+  status?: "active" | "archived";
+  /** Nombre d'objets. Voir [Pagination](/developers/pagination) */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour la page qui le précède */
+  ending_before?: string;
+  created?: { gte?: string; lte?: string };
+}
+
+export interface GetPlanParams {
+}
+
+export interface UpdatePlanParams {
+  /** Nom */
+  name?: string;
+  /** Description */
+  description?: string | null;
+  /** Proposé dans l'espace client */
+  portal_switchable?: boolean;
+  /** Vos données libres, renvoyées telles quelles. 50 clés maximum, valeurs de 500 caractères maximum. */
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface DeletePlanParams {
+}
+
+export interface ArchivePlanParams {
+}
+
+export interface RestorePlanParams {
+}
+
+export interface ListCustomersParams {
+  /** Adresse exacte, sans tenir compte des majuscules */
+  email?: string;
+  /** Nombre d'objets. Voir [Pagination](/developers/pagination) */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour la page qui le précède */
+  ending_before?: string;
+  created?: { gte?: string; lte?: string };
+}
+
+export interface CreateCustomerParams {
+  /** E-mail, unique par environnement */
+  email: string;
+  /** Nom */
+  name?: string | null;
+  /** Vos données libres (jusqu'à 50 clés, valeurs de 500 caractères au plus), renvoyées dans les réponses et les webhooks. Par exemple votre numéro de commande. */
+  metadata?: Record<string, unknown>;
+}
+
+export interface GetCustomerParams {
+}
+
+export interface UpdateCustomerParams {
+  /** E-mail, unique par environnement */
+  email?: string;
+  /** Nom */
+  name?: string | null;
+  /** Vos données libres (jusqu'à 50 clés, valeurs de 500 caractères au plus), renvoyées dans les réponses et les webhooks. Par exemple votre numéro de commande. */
+  metadata?: Record<string, unknown>;
+}
+
+export interface DeleteCustomerParams {
+}
+
+export interface ListCustomerPaymentMethodsParams {
+  /** Nombre d'objets. Voir [Pagination](/developers/pagination) */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour la page qui le précède */
+  ending_before?: string;
+  created?: { gte?: string; lte?: string };
+}
+
+export interface SetDefaultPaymentMethodParams {
+}
+
+export interface RemovePaymentMethodParams {
+}
+
+export interface CreateSubscriptionParams {
+  /** Nom du client */
+  customer_name: string;
+  /** Reçoit les reçus, les rappels et l'accès à l'espace client */
+  customer_email: string;
+  /** Sans ce champ, le client choisit sur la page de paiement */
+  payment_method?: "card" | "mobile_money";
+  /** Numéro mobile money. Avec `payment_method: "mobile_money"`, la première demande part tout de suite sur ce téléphone. */
+  customer_phone?: string;
+  /** Avec `customer_phone`. Pays ISO 3166-1 alpha-3, par exemple `CMR`. */
+  customer_country?: string;
+  /** Avec `customer_phone`. Code opérateur, par exemple `MTN_MOMO_CMR`. Voir [Pays et opérateurs](/payments/overview#pays-et-operateurs). */
+  customer_provider?: string;
+  /** Nombre d'échéances avant l'arrêt, de 1 à 1000 */
+  max_cycles?: number;
+  /** Vos données libres, renvoyées telles quelles. 50 clés maximum, valeurs de 500 caractères maximum. */
+  metadata?: Record<string, unknown> | null;
+  /** Identifiant d'un de vos plans actifs (`plan_…`) */
+  plan: string;
+}
+
+export interface ListSubscriptionsParams {
+  /** Statut */
+  status?: "incomplete" | "trialing" | "active" | "past_due" | "unpaid" | "paused" | "canceled";
+  /** Adresse exacte du client */
+  customer_email?: string;
+  /** Identifiant d'un plan (`plan_…`) */
+  plan?: string;
+  /** Nombre d'objets. Voir [Pagination](/developers/pagination) */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour la page qui le précède */
+  ending_before?: string;
+  /** Objets liés à recevoir en entier. Voir [Objets liés](/developers/expand) */
+  expand?: string[];
+  created?: { gte?: string; lte?: string };
+}
+
+export interface GetSubscriptionParams {
+  /** Objets liés à recevoir en entier. Voir [Objets liés](/developers/expand) */
+  expand?: string[];
+}
+
+export interface UpdateSubscriptionParams {
+  /** Pas en dessous de `cycles_billed`. `null` retire la limite. */
+  max_cycles?: number | null;
+  /** Nom du client */
+  customer_name?: string;
+  /** Nouveau numéro mobile money */
+  customer_phone?: string;
+  /** Pays ISO 3166-1 alpha-3, par exemple `CMR`. */
+  customer_country?: string;
+  /** Code opérateur, par exemple `MTN_MOMO_CMR`. Voir [Pays et opérateurs](/payments/overview#pays-et-operateurs). */
+  customer_provider?: string;
+  /** Remplace les métadonnées */
+  metadata?: Record<string, unknown> | null;
+  /** Nouveau plan (`plan_…`), même devise. Plus cher au même rythme : la différence au prorata est encaissée tout de suite et le plan change dès le paiement. Sinon : appliqué à la prochaine échéance. Renvoyer le plan actuel retire un changement prévu. */
+  plan?: string;
+}
+
+export interface CancelSubscriptionParams {
+  /** `true` : s'arrête à la fin de la période payée. Absent ou `false` : tout de suite, et les factures en attente sont annulées. */
+  at_period_end?: boolean;
+}
+
+export interface ReactivateSubscriptionParams {
+}
+
+export interface AdvanceSubscriptionParams {
+}
+
+export interface PauseSubscriptionParams {
+  /** Reprise automatique, dans le futur. Sans date, la pause dure jusqu'à `resume`. */
+  resumes_at?: string;
+}
+
+export interface ResumeSubscriptionParams {
+}
+
+export interface ListSubscriptionInvoicesParams {
+  /** Statut */
+  status?: "pending" | "paid" | "failed" | "canceled";
+  /** Nombre d'objets. Voir [Pagination](/developers/pagination) */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour la page qui le précède */
+  ending_before?: string;
+  /** Objets liés à recevoir en entier. Voir [Objets liés](/developers/expand) */
+  expand?: string[];
+  created?: { gte?: string; lte?: string };
+}
+
+export interface ListInvoicesParams {
+  /** Statut */
+  status?: "pending" | "paid" | "failed" | "canceled";
+  /** Identifiant d'un abonnement (`sub_…`) */
+  subscription?: string;
+  /** Nombre d'objets. Voir [Pagination](/developers/pagination) */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour la page qui le précède */
+  ending_before?: string;
+  /** Objets liés à recevoir en entier. Voir [Objets liés](/developers/expand) */
+  expand?: string[];
+  created?: { gte?: string; lte?: string };
+}
+
+export interface GetInvoiceParams {
+  /** Objets liés à recevoir en entier. Voir [Objets liés](/developers/expand) */
+  expand?: string[];
+}
+
+export interface PayInvoiceParams {
+}
+
+export interface SendInvoiceParams {
+}
+
+export interface CreateBillingPortalSessionParams {
+  /** Adresse d'un client qui a au moins un abonnement dans cet environnement */
+  customer_email: string;
+  /** Votre page, affichée en lien « Retour vers » suivi du nom de votre boutique */
+  return_url?: string;
+}
+
+export interface ExpireCheckoutSessionParams {
+}
+
+export interface ListEventsParams {
+  /** Un seul type, par exemple `payment.succeeded` */
+  type?: string;
+  /** Nombre d'objets */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour revenir à la page d'avant */
+  ending_before?: string;
+}
+
+export interface GetEventParams {
+}
+
+export interface ListEventDeliveriesParams {
+  /** Nombre d'objets. Voir [Pagination](/developers/pagination) */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour la page qui le précède */
+  ending_before?: string;
+}
+
+export interface ListEmbedDomainsParams {
+  /** Nombre d'objets */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour revenir à la page d'avant */
+  ending_before?: string;
+}
+
+export interface CreateEmbedDomainParams {
+  /** Le domaine de votre site, par exemple `boutique.com`. Un `https://` ou un chemin éventuels sont retirés. */
+  hostname: string;
+}
+
+export interface GetEmbedDomainParams {
+}
+
+export interface DeleteEmbedDomainParams {
+}
+
+export interface VerifyEmbedDomainParams {
+}
+
+export interface ListWebhookEndpointsParams {
+  /** Nombre d'objets */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour revenir à la page d'avant */
+  ending_before?: string;
+}
+
+export interface CreateWebhookEndpointParams {
+  /** URL publique en HTTPS de votre serveur */
+  url: string;
+  /** Les types d'événements à recevoir */
+  events: string[];
+  /** L'environnement de votre clé, ou `null` pour les deux. `null` demande une clé live : une clé sandbox ne gère que des endpoints sandbox, et c'est leur environnement par défaut. */
+  environment?: "sandbox" | "live" | null;
+}
+
+export interface GetWebhookEndpointParams {
+}
+
+export interface UpdateWebhookEndpointParams {
+  /** URL publique en HTTPS de votre serveur */
+  url?: string;
+  /** Les types d'événements à recevoir */
+  events?: string[];
+  /** L'environnement de votre clé, ou `null` pour les deux. `null` demande une clé live : une clé sandbox ne gère que des endpoints sandbox, et c'est leur environnement par défaut. */
+  environment?: "sandbox" | "live" | null;
+  status?: "enabled" | "disabled";
+}
+
+export interface DeleteWebhookEndpointParams {
+}
+
+export interface RotateWebhookEndpointSecretParams {
+}
+
+export interface TestWebhookEndpointParams {
+}
+
+export interface ResendEventParams {
+  /** Identifiant de l'endpoint (`we_…`) */
+  webhook_endpoint: string;
+}
+
+export interface ListRequestLogsParams {
+  /** `success` (statut < 400) ou `error` (statut ≥ 400) */
+  status?: "success" | "error";
+  /** Une seule méthode HTTP */
+  method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+  /** Partie du chemin, par exemple `payments` */
+  path?: string;
+  /** Nombre d'objets */
+  limit?: number;
+  /** Le `next_cursor` de la page précédente */
+  starting_after?: string;
+  /** Un id, pour revenir à la page d'avant */
+  ending_before?: string;
+}
+
+export interface CreateTestEventParams {
+  /** Le type d'événement à déclencher. */
+  type: "payment.succeeded" | "payment.failed" | "payment.refunded" | "payment.disputed" | "payment.dispute_closed" | "refund.succeeded" | "refund.failed" | "refund.canceled" | "payout.paid" | "payout.failed" | "payout.canceled" | "subscription.created" | "subscription.updated" | "subscription.past_due" | "subscription.unpaid" | "subscription.paused" | "subscription.resumed" | "subscription.canceled" | "invoice.created" | "invoice.upcoming" | "invoice.paid" | "invoice.canceled" | "invoice.payment_failed" | "checkout_session.completed" | "provider_status.changed" | "account.updated";
+}
+
+export interface CreateRefundParams {
+  /** Montant à rendre, en unités mineures de la devise du paiement. Absent : tout ce qui reste à rendre. */
+  amount?: number;
+  /** Motif, gardé avec le remboursement. */
+  reason?: string;
+}
+
+export interface ListRefundsParams {
+  /** Seulement ceux d'un paiement (`pay_…`) */
+  payment?: string;
+  status?: "pending" | "processing" | "succeeded" | "failed" | "canceled";
+}
+
+export interface GetRefundParams {
+}
+
+export interface CancelRefundParams {
+}
+
+export interface ListTestMobileMoneyNumbersParams {
+  /** Un seul pays, par exemple `CMR` */
+  country?: CountryCode;
+  /** Un seul opérateur, par exemple `MTN_MOMO_CMR` */
+  provider?: MobileMoneyProvider;
 }

@@ -105,9 +105,44 @@ new MercyPay(apiKey, {
 });
 ```
 
+## Paramètres typés
+
+Chaque méthode connaît les champs que l'API accepte : votre éditeur les propose, et TypeScript signale un champ obligatoire oublié ou une valeur inconnue (`payment_method: 'cash'`). Les opérateurs, les pays et les types d'événements sont aussi exportés :
+
+```ts
+import { COUNTRIES, EVENT_TYPES, type MobileMoneyProvider } from '@mercy-pay/node';
+
+const provider: MobileMoneyProvider = 'MTN_MOMO_CMR'; // proposé par l'autocomplétion
+```
+
+Un opérateur que le SDK ne connaît pas encore reste accepté : la liste grandit sans casser votre code.
+
+## Attendre le résultat
+
+Pour un script ou un test, attendez qu'un paiement ait un statut final :
+
+```ts
+const payment = await mercyPay.payments.waitForFinalStatus(id, { timeout: 60_000 });
+const session = await mercyPay.checkoutSessions.waitForCompletion(sessionId);
+```
+
+La lecture se répète, de plus en plus espacée, jusqu'à `succeeded`, `failed`, `canceled` ou `expired`. Passé le délai, `WaitTimeoutError` donne le dernier état dans `last`. Sur un serveur en production, préférez le webhook `payment.succeeded`.
+
 ## Sandbox
 
-Une clé `mp_sandbox_…` ne touche pas à l'argent réel. `await mercyPay.testHelpers.triggerEvent({ type: 'payment.succeeded' })` envoie un événement de test à vos endpoints, et la [CLI](https://docs.mercy-pay.com/developers/cli) relaie les webhooks vers votre ordinateur.
+Une clé `mp_sandbox_…` ne touche pas à l'argent réel.
+
+```ts
+// Le numéro de test qui produit ce résultat :
+const phone = await mercyPay.testHelpers.mobileMoneyNumber('ORANGE_CMR', 'insufficient_balance');
+const payment = await mercyPay.payments.create(
+  { amount: 1000, currency: 'XAF', country: 'CMR', provider: 'ORANGE_CMR', phone: phone! },
+  { idempotencyKey: 'test-solde-insuffisant' },
+);
+await mercyPay.payments.waitForFinalStatus(payment.id); // failed, failure_code insufficient_balance
+```
+
+Les résultats possibles : `succeeded`, `pending`, `payout_failed`, ou un `failure_code` comme `insufficient_balance`. `await mercyPay.testHelpers.triggerEvent({ type: 'payment.succeeded' })` envoie un événement de test à vos endpoints, et la [CLI](https://docs.mercy-pay.com/developers/cli) relaie les webhooks vers votre ordinateur.
 
 ## Développement
 

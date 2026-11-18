@@ -4,28 +4,26 @@ import type { RequestOptions } from './resource.js';
 import {
   AccountResource,
   BillingPortalResource,
-  CheckoutSessionsResource,
   CustomersResource,
   EventsResource,
   FeesResource,
   InvoicesResource,
   PaymentLinksResource,
-  PaymentsResource,
   PayoutsResource,
   PlansResource,
   ProviderStatusResource,
   RefundsResource,
   RequestLogsResource,
   SubscriptionsResource,
-  TestHelpersResource,
   WalletTransfersResource,
   WalletsResource,
   WebhookEndpointsResource,
   EmbedDomainsResource,
 } from './resources.js';
+import { CheckoutSessions, Payments, TestHelpers } from './extras.js';
 import { webhooks } from './webhooks.js';
 
-export const VERSION = '0.2.0';
+export const VERSION = '0.3.0';
 
 export interface MercyPayOptions {
   /** https://mercy-pay.com by default. */
@@ -55,20 +53,20 @@ export class MercyPay {
 
   readonly account = new AccountResource(this);
   readonly billingPortal = new BillingPortalResource(this);
-  readonly checkoutSessions = new CheckoutSessionsResource(this);
+  readonly checkoutSessions = new CheckoutSessions(this);
   readonly customers = new CustomersResource(this);
   readonly events = new EventsResource(this);
   readonly fees = new FeesResource(this);
   readonly invoices = new InvoicesResource(this);
   readonly paymentLinks = new PaymentLinksResource(this);
-  readonly payments = new PaymentsResource(this);
+  readonly payments = new Payments(this);
   readonly payouts = new PayoutsResource(this);
   readonly plans = new PlansResource(this);
   readonly providerStatus = new ProviderStatusResource(this);
   readonly refunds = new RefundsResource(this);
   readonly requestLogs = new RequestLogsResource(this);
   readonly subscriptions = new SubscriptionsResource(this);
-  readonly testHelpers = new TestHelpersResource(this);
+  readonly testHelpers = new TestHelpers(this);
   readonly wallets = new WalletsResource(this);
   readonly walletTransfers = new WalletTransfersResource(this);
   readonly webhookEndpoints = new WebhookEndpointsResource(this);
@@ -78,7 +76,8 @@ export class MercyPay {
   private readonly timeout: number;
   private readonly maxRetries: number;
   private readonly fetchImplementation: typeof fetch;
-  private readonly sleep: (milliseconds: number) => Promise<void>;
+  /** @internal */
+  readonly sleep: (milliseconds: number) => Promise<void>;
 
   constructor(
     private readonly apiKey: string,
